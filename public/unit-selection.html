@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Units - ReadMaster</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #1e293b;
+            --gray: #64748b;
+            --card-bg: #ffffff;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: var(--gray);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: var(--dark);
+        }
+
+        .units-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .unit-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .unit-card.unlocked {
+            border-left: 5px solid var(--success);
+        }
+
+        .unit-card.locked {
+            opacity: 0.6;
+            border-left: 5px solid var(--gray);
+        }
+
+        .unit-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .unit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .unit-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .unit-status {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+
+        .status-unlocked {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-locked {
+            background: var(--gray);
+            color: white;
+        }
+
+        .unit-title {
+            font-size: 20px;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .unit-description {
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .unit-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            background: var(--secondary);
+        }
+
+        .start-btn:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+        }
+
+        .coming-soon-badge {
+            position: absolute;
+            top: 20px;
+            right: -30px;
+            background: var(--warning);
+            color: white;
+            padding: 5px 30px;
+            transform: rotate(45deg);
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="books.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Books
+            </a>
+            <h1>Thoughts and Notions - Units</h1>
+            <div class="user-info">
+                <span id="userName"></span>
+            </div>
+        </header>
+
+        <div class="units-container" id="unitsContainer">
+            <!-- Units will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem('user'));
+        
+        if (!user) {
+            window.location.href = '/';
+        }
+        
+        document.getElementById('userName').textContent = `${user.name} ${user.surname}`;
+        
+        // Get book ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookId = urlParams.get('book');
+        
+        // Load units
+        async function loadUnits() {
+            try {
+                const response = await fetch(`/api/books`);
+                const books = await response.json();
+                const book = books.find(b => b.id === bookId);
+                
+                if (book && book.units) {
+                    const unitsContainer = document.getElementById('unitsContainer');
+                    unitsContainer.innerHTML = '';
+                    
+                    book.units.forEach(unit => {
+                        const unitCard = document.createElement('div');
+                        unitCard.className = `unit-card ${unit.unlocked ? 'unlocked' : 'locked'}`;
+                        
+                        unitCard.innerHTML = `
+                            ${!unit.unlocked ? '<div class="coming-soon-badge">Coming Soon</div>' : ''}
+                            <div class="unit-header">
+                                <span class="unit-number">Unit ${unit.id}</span>
+                                <span class="unit-status ${unit.unlocked ? 'status-unlocked' : 'status-locked'}">
+                                    ${unit.unlocked ? 'Unlocked' : 'Locked'}
+                                </span>
+                            </div>
+                            <h3 class="unit-title">${unit.title}</h3>
+                            <p class="unit-description">Improve your reading skills with this interesting lesson</p>
+                            <div class="unit-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>15-20 min</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-star"></i>
+                                    <span>Beginner</span>
+                                </div>
+                            </div>
+                            <button class="start-btn" ${unit.unlocked ? '' : 'disabled'} onclick="${unit.unlocked ? `openUnit('${unit.id}')` : ''}">
+                                ${unit.unlocked ? '<i class="fas fa-play"></i> Start Unit' : 'Coming Soon'}
+                            </button>
+                        `;
+                        
+                        unitsContainer.appendChild(unitCard);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading units:', error);
+            }
+        }
+        
+        function openUnit(unitId) {
+            window.location.href = `unit.html?book=${bookId}&unit=${unitId}`;
+        }
+        
+        loadUnits();
+    </script>
+</body>
+</html>
